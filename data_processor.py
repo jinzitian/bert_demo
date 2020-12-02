@@ -130,7 +130,7 @@ if __name__ == "__main__":
     tokenizer = tokenization.FullTokenizer(vocab_file=vocab_file)
     label2id = get_label2id('./data/labels.txt')
 
-    max_seq_len = 256
+    max_seq_len = 128
     make_hive_data_to_normal_test_data('./data/train_data.txt', './data/norm_train_data.txt', './data/norm_dev_data.txt')
     prepare_tf_record_data(tokenizer, max_seq_len, label2id, path="./data/norm_train_data.txt",
                            out_path="./data/train.tf_record")
