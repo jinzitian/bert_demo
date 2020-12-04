@@ -19,18 +19,18 @@ config = {
     "dev_data": "./data/dev.tf_record",  # 第二个输入为 验证文件
     "bert_config": "./chinese_L-12_H-768_A-12/bert_config.json",  # bert模型配置文件
     "init_checkpoint": "./chinese_L-12_H-768_A-12/bert_model.ckpt",  # 预训练bert模型
-    "train_examples_len": 33423,
-    "dev_examples_len": 3741,
-    "top_k": 5,
-    "threshold": 0.3,
+    "train_examples_len": 27446,
+    "dev_examples_len": 3050,
+    "top_k": 3,
+    "threshold": 0.2,
     "num_labels": 70,
     "train_batch_size": 32,
     "dev_batch_size": 64,
-    "num_train_epochs": 5,
+    "num_train_epochs": 3,
     "eval_per_step": 20,
     "learning_rate": 1.5e-5,
     "warmup_proportion": 0.1,
-    "max_seq_len": 128,  # 输入文本片段的最大 char级别 长度
+    "max_seq_len": 256,  # 输入文本片段的最大 char级别 长度
     "out": "./muti_category_bert_base/",  # 保存模型路径
     "loss_type": "sigmoid" #sigmoid
 }
@@ -150,9 +150,9 @@ def get_input_data(input_file, seq_length, num_labels, batch_size, is_training=T
     dataset = tf.data.TFRecordDataset(input_file)
     # 数据类别集中，需要较大的buffer_size，才能有效打乱，或者再 数据处理的过程中进行打乱
     if is_training:
-        dataset = dataset.map(parser).batch(batch_size).shuffle(buffer_size=3000)
+        dataset = dataset.map(parser).batch(batch_size).shuffle(buffer_size=3000).repeat()
     else:
-        dataset = dataset.map(parser).batch(batch_size)
+        dataset = dataset.map(parser).batch(batch_size).repeat()
     iterator = dataset.make_one_shot_iterator()
     input_ids, input_mask, segment_ids, labels = iterator.get_next()
     return input_ids, input_mask, segment_ids, labels
@@ -189,7 +189,7 @@ def train():
     (total_loss, logits, prob) = create_model(bert_config_, is_training, input_ids,
                                                                          input_mask, segment_ids, labels, keep_prob,
                                                                          num_labels, use_one_hot_embeddings, config["loss_type"])
-    train_op = optimization.create_optimizer(
+    train_op, lr = optimization.create_optimizer(
         total_loss, learning_rate, num_train_steps * config["num_train_epochs"], num_warmup_steps, False)
     print("print start train the bert model...")
 
@@ -241,9 +241,9 @@ def train():
                     segment_ids: segment,
                     labels: y,
                     keep_prob: 0.9}
-            _, out_loss, p_ = sess.run([train_op, total_loss, prob], feed_dict=feed)
-            #print("epoch :{}, step :{}, lr :{}, loss :{}".format(epoch, step, _[1], out_loss))
-            return out_loss, p_, y
+            _, lr_, out_loss, p_ = sess.run([train_op, lr, total_loss, prob], feed_dict=feed)
+            #print("epoch :{}, step :{}, lr :{}, loss :{}".format(epoch, step, lr, out_loss))
+            return out_loss, p_, lr_
 
         def dev_step(ids, mask, segment, y, threshold, top_k):
             feed = {input_ids: ids,
@@ -344,7 +344,7 @@ def train():
                 step += 1
                 ids_train, mask_train, segment_train, y_train = sess.run(
                     [input_ids2, input_mask2, segment_ids2, labels2])
-                train_step(ids_train, mask_train, segment_train, y_train, step, epoch)
+                t_loss, t_p, t_lr = train_step(ids_train, mask_train, segment_train, y_train, step, epoch)
 
                 if step % eval_per_step == 0:
                     total_loss_dev = 0
@@ -354,7 +354,7 @@ def train():
                     total_acc = 0
                     dev_input_ids2, dev_input_mask2, dev_segment_ids2, dev_labels2 = get_input_data(config["dev_data"],seq_len,num_labels,dev_batch_size,False)
                     
-                    for j in range(num_dev_steps):  # 一个 epoch 的 轮数
+                    for j in range(4):  # 一个 epoch 的 轮数
                         ids_dev, mask_dev, segment_dev, y_dev = sess.run(
                             [dev_input_ids2, dev_input_mask2, dev_segment_ids2, dev_labels2])
                         out_loss, pre, y, f1, precision, recall, acc = dev_step(ids_dev, mask_dev, segment_dev, y_dev, config["threshold"], config["top_k"])
@@ -369,7 +369,7 @@ def train():
                     #print("avg_precision_dev:{}".format(total_precision/num_dev_steps))
                     #print("avg_recall_dev:{}".format(total_recall/num_dev_steps))
                     #print("avg_acc_dev:{}".format(total_acc/num_dev_steps))
-                    print("epoch:{:<2}, step:{:<6}, loss:{:<10.6}, acc:{:<10.3}, f1:{:<10.3}, precision:{:<10.3}, recall:{:<10.3}".format(epoch, step, total_loss_dev, total_acc/num_dev_steps, total_f1/num_dev_steps, total_precision/num_dev_steps, total_recall/num_dev_steps))
+                    print("epoch:{:<2}, step:{:<6}, lr:{:<10.6}, loss:{:<10.6}, acc:{:<10.3}, f1:{:<10.3}, precision:{:<10.3}, recall:{:<10.3}".format(epoch, step, t_lr, total_loss_dev, total_acc/num_dev_steps, total_f1/num_dev_steps, total_precision/num_dev_steps, total_recall/num_dev_steps))
                     saver.save(sess, config["out"] + 'bert.ckpt', global_step=step)
                 
 

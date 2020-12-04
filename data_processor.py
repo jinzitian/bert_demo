@@ -8,6 +8,7 @@
 import tokenization
 import tensorflow as tf
 import numpy as np
+import re
 
 
 #将hive导出的数据变成标准格式，再做后续处理
@@ -18,22 +19,28 @@ def make_hive_data_to_normal_test_data(file_path, train_path, dev_path):
     f = open(file_path, 'r', encoding='utf-8')
     lines = f.readlines()
     f.close()
-    dev_size = int(0.1*len(lines))
-    rand_index = np.random.permutation(len(lines))
-    num = 0
-    for i in rand_index:
-        line = lines[i]
+    
+    processed_lines = []
+    for line in lines:
         if line.strip() == '' or 'music_id' in line:
             continue
         arr = line.strip().split('|')
-        if len(arr) == 8:
-            s = ''
-            for a in arr:
-                s += a.strip()+'\t'
-            if num > dev_size:
-                train.write(s.strip()+'\n')
-            else:
-                dev.write(s.strip()+'\n')
+        if len(arr) == 8 and len(re.sub(r'[0-9a-zA-Z ,&;\s]*', "", arr[6])) > 80:
+            processed_lines.append(line)
+    
+    dev_size = int(0.1*len(processed_lines))
+    rand_index = np.random.permutation(len(processed_lines))
+    num = 0
+    for i in rand_index:
+        line = processed_lines[i]
+        arr = line.strip().split('|')
+        s = ''
+        for a in arr:
+            s += a.strip()+'\t'
+        if num > dev_size:
+            train.write(s.strip()+'\n')
+        else:
+            dev.write(s.strip()+'\n')
         num += 1
         
     train.close()
@@ -130,7 +137,7 @@ if __name__ == "__main__":
     tokenizer = tokenization.FullTokenizer(vocab_file=vocab_file)
     label2id = get_label2id('./data/labels.txt')
 
-    max_seq_len = 128
+    max_seq_len = 256
     make_hive_data_to_normal_test_data('./data/train_data.txt', './data/norm_train_data.txt', './data/norm_dev_data.txt')
     prepare_tf_record_data(tokenizer, max_seq_len, label2id, path="./data/norm_train_data.txt",
                            out_path="./data/train.tf_record")
