@@ -131,7 +131,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, l
             return (loss, logits, prob)
 
 
-def get_input_data(input_file, seq_length, num_labels, batch_size, is_training=True):
+def get_input_data(input_file, seq_length, num_labels, batch_size):
     def parser(record):
         name_to_features = {
             "input_ids": tf.FixedLenFeature([seq_length], tf.int64),
@@ -149,10 +149,7 @@ def get_input_data(input_file, seq_length, num_labels, batch_size, is_training=T
 
     dataset = tf.data.TFRecordDataset(input_file)
     # 数据类别集中，需要较大的buffer_size，才能有效打乱，或者再 数据处理的过程中进行打乱
-    if is_training:
-        dataset = dataset.map(parser).batch(batch_size).shuffle(buffer_size=3000).repeat()
-    else:
-        dataset = dataset.map(parser).batch(batch_size).repeat()
+    dataset = dataset.map(parser).batch(batch_size).shuffle(buffer_size=3000).repeat()
     iterator = dataset.make_one_shot_iterator()
     input_ids, input_mask, segment_ids, labels = iterator.get_next()
     return input_ids, input_mask, segment_ids, labels
@@ -334,26 +331,23 @@ def train():
             return out_loss, prob_pre, y, f1_avg, precision_avg, recall_avg, acc
 
         step = 0
+        input_ids2, input_mask2, segment_ids2, labels2 = get_input_data(config["train_data"], seq_len, num_labels, batch_size)
+        dev_input_ids2, dev_input_mask2, dev_segment_ids2, dev_labels2 = get_input_data(config["dev_data"],seq_len,num_labels,dev_batch_size)
         for epoch in range(config["num_train_epochs"]):
             #格式化输出 居中对齐
             print("{:*^100s}".format(("epoch-" + str(epoch)).center(20)))
             # 读取训练数据
-
-            input_ids2, input_mask2, segment_ids2, labels2 = get_input_data(config["train_data"], seq_len, num_labels, batch_size)
             for i in range(num_train_steps):
                 step += 1
                 ids_train, mask_train, segment_train, y_train = sess.run(
                     [input_ids2, input_mask2, segment_ids2, labels2])
                 t_loss, t_p, t_lr = train_step(ids_train, mask_train, segment_train, y_train, step, epoch)
-
                 if step % eval_per_step == 0:
                     total_loss_dev = 0
                     total_f1 = 0
                     total_precision = 0
                     total_recall = 0
                     total_acc = 0
-                    dev_input_ids2, dev_input_mask2, dev_segment_ids2, dev_labels2 = get_input_data(config["dev_data"],seq_len,num_labels,dev_batch_size,False)
-                    
                     for j in range(4):  # 一个 epoch 的 轮数
                         ids_dev, mask_dev, segment_dev, y_dev = sess.run(
                             [dev_input_ids2, dev_input_mask2, dev_segment_ids2, dev_labels2])
