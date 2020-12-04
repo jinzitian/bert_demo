@@ -348,7 +348,9 @@ def train():
                     total_precision = 0
                     total_recall = 0
                     total_acc = 0
-                    for j in range(4):  # 一个 epoch 的 轮数
+    
+                    num_dev_steps = 4
+                    for j in range(num_dev_steps):  # 一个 epoch 的 轮数
                         ids_dev, mask_dev, segment_dev, y_dev = sess.run(
                             [dev_input_ids2, dev_input_mask2, dev_segment_ids2, dev_labels2])
                         out_loss, pre, y, f1, precision, recall, acc = dev_step(ids_dev, mask_dev, segment_dev, y_dev, config["threshold"], config["top_k"])
