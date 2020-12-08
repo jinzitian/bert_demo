@@ -18,7 +18,7 @@ vocab_file = "./chinese_L-12_H-768_A-12/vocab.txt"
 tokenizer_ = tokenization.FullTokenizer(vocab_file=vocab_file)
 label2id = get_label2id('./data/labels.txt')
 id2label = {v : k for k, v in label2id.items()}
-threshold = 0.0
+threshold = 0.25
 top_k = 3
 
 

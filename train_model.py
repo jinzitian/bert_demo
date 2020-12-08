@@ -22,7 +22,7 @@ config = {
     "train_examples_len": 27446,
     "dev_examples_len": 3050,
     "top_k": 3,
-    "threshold": 0.2,
+    "threshold": 0.4,
     "num_labels": 70,
     "train_batch_size": 32,
     "dev_batch_size": 64,
@@ -365,7 +365,7 @@ def train():
                     #print("avg_precision_dev:{}".format(total_precision/num_dev_steps))
                     #print("avg_recall_dev:{}".format(total_recall/num_dev_steps))
                     #print("avg_acc_dev:{}".format(total_acc/num_dev_steps))
-                    print("epoch:{:<2}, step:{:<6}, lr:{:<10.6}, loss:{:<10.6}, acc:{:<10.3}, f1:{:<10.3}, precision:{:<10.3}, recall:{:<10.3}".format(epoch, step, t_lr, total_loss_dev, total_acc/num_dev_steps, total_f1/num_dev_steps, total_precision/num_dev_steps, total_recall/num_dev_steps))
+                    print("epoch:{:<2}, step:{:<6}, lr:{:<10.6}, loss:{:<10.6}, acc:{:<10.3}, f1:{:<10.3}, precision:{:<10.3}, recall:{:<10.3}".format(epoch, step, t_lr, total_loss_dev/num_dev_steps, total_acc/num_dev_steps, total_f1/num_dev_steps, total_precision/num_dev_steps, total_recall/num_dev_steps))
                     saver.save(sess, config["out"] + 'bert.ckpt', global_step=step)
                 
 
