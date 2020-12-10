@@ -135,10 +135,10 @@ def make_hive_data_to_normal(file_path, norm_path):
 
 def main():
     ori_path = './data/ori_predict.txt'
-    norm_path = './data/norm_predict.txt'
-    out_path = './data/out_predict.txt'
+    norm_path = './data/norm_predict.txt'    
     make_hive_data_to_normal(ori_path, norm_path)
     
+    out_path = './data/out_predict.txt'
     out = open(out_path, 'w', encoding='utf-8')
     with open(norm_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -157,6 +157,29 @@ def main():
             
             out.write(music_id + '\t' + music_name + '\t' + artist_id + '\t' + categorys + '\t' + lyric +'\n')
     out.close()
+    
+
+def main_demo():
+    norm_path = './data/demo_predict.txt'
+    out_path = './data/demo_out_predict.txt'
+    out = open(out_path, 'w', encoding='utf-8')
+    with open(norm_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            if not line.strip():
+                continue
+            arr = line.strip().split('\t')
+            music_id = arr[0]
+            music_name = arr[1]
+            artist_id = arr[2]
+            lyric = arr[3][1:-1]
+            if len(re.sub(r'[0-9a-zA-Z ,&;\s]*', "", lyric)) > 80:
+                (probs, class_ids, pre_labels) = predict([lyric], threshold, 256)
+                categorys = ','.join(pre_labels[0])
+            else:
+                categorys = ''
+            
+            out.write(music_id + '\t' + music_name + '\t' + artist_id + '\t' + '[' + categorys + ']' + '\t' + lyric +'\n')
+    out.close()
 
 
 if __name__ == "__main__":
@@ -165,4 +188,4 @@ if __name__ == "__main__":
     #(probs, class_ids, pre_labels) = predict([text_], threshold)
     #print(probs)
     #print(pre_labels)
-    main()
+    main_demo()

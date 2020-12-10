@@ -22,7 +22,7 @@ config = {
     "train_examples_len": 27446,
     "dev_examples_len": 3050,
     "top_k": 3,
-    "threshold": 0.4,
+    "threshold": 0.25,
     "num_labels": 70,
     "train_batch_size": 32,
     "dev_batch_size": 64,
