@@ -99,19 +99,24 @@ def predict(text_list, threshold, max_seq_len):
             input_mask: [feature[1] for feature in features],
             segment_ids: [feature[2] for feature in features],
             keep_prob: 1.0
-            }
+           }
 
     probs = sess.run(prob, feed)
     prob_topk = np.argsort(probs, axis = 1)[:,-top_k:]
     predict_list = []
+    predict_prob_list = []
     for i in range(len(probs)):
         prob_data = probs[i]
         class_top_k = prob_topk[i]
-        predict_data = class_top_k[np.where(prob_data[class_top_k]>threshold)[0]]
+        prob_data_k = prob_data[class_top_k]
+        predict_data = class_top_k[np.where(prob_data_k>threshold)[0]]
+        predict_prob_data = prob_data_k[np.where(prob_data_k>threshold)[0]]
         predict_list.append(predict_data)
+        predict_prob_list.append(predict_prob_data)
     
     pre_labels = [[id2label[i] for i in data] for data in predict_list]
-    return probs, predict_list, pre_labels
+    pre_probs = [['{:.3f}'.format(i) for i in data] for data in predict_prob_list]
+    return probs, predict_list, pre_labels, pre_probs
 
 
 #将hive导出的数据变成标准格式，再做后续处理
@@ -150,7 +155,7 @@ def main():
             artist_id = arr[2]
             lyric = arr[3][1:-1]
             if len(re.sub(r'[0-9a-zA-Z ,&;\s]*', "", lyric)) > 80:
-                (probs, class_ids, pre_labels) = predict([lyric], threshold, 256)
+                (probs, class_ids, pre_labels, pre_probs) = predict([lyric], threshold, 256)
                 categorys = ','.join(pre_labels[0])
             else:
                 categorys = ''
@@ -173,12 +178,14 @@ def main_demo():
             artist_id = arr[2]
             lyric = arr[3][1:-1]
             if len(re.sub(r'[0-9a-zA-Z ,&;\s]*', "", lyric)) > 80:
-                (probs, class_ids, pre_labels) = predict([lyric], threshold, 256)
+                (probs, class_ids, pre_labels, pre_probs) = predict([lyric], threshold, 256)
                 categorys = ','.join(pre_labels[0])
+                category_probs = ','.join(pre_probs[0])
             else:
                 categorys = ''
             
-            out.write(music_id + '\t' + music_name + '\t' + artist_id + '\t' + '[' + categorys + ']' + '\t' + lyric +'\n')
+            out.write(music_id + '\t' + music_name + '\t' + artist_id + '\t' + '[' + categorys + ']' + '\t'
+                      + '[' + category_probs + ']' + '\t' + lyric +'\n')
     out.close()
 
 

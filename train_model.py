@@ -65,6 +65,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, l
     model = modeling.BertModel(
         config=bert_config,
         is_training=is_training,
+        dropout_prob=1-keep_prob,
         input_ids=input_ids,
         input_mask=input_mask,
         token_type_ids=segment_ids,
@@ -87,7 +88,7 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, l
         #通过softmax方式构建损失函数学习，这样应该是趋于各个标签概率均衡的方式学习，但是仍然彼此存在影响，并不好控制标签判定阈值
         with tf.variable_scope("softmax_loss"):
             if is_training:
-                output_layer = tf.nn.dropout(output_layer, keep_prob=0.9)
+                output_layer = tf.nn.dropout(output_layer, keep_prob=keep_prob)
 
             logits = tf.matmul(output_layer, output_weight, transpose_b=True)
             logits = tf.nn.bias_add(logits, output_bias)
@@ -107,9 +108,9 @@ def create_model(bert_config, is_training, input_ids, input_mask, segment_ids, l
             return (loss, logits, prob)
     else:
         #通过sigmod方式学习，可以排除各个标签的影响，比较容易找到判定阈值
-        with tf.variable_scope("sigmod_loss"):
+        with tf.variable_scope("sigmoid_loss"):
             if is_training:
-                output_layer = tf.nn.dropout(output_layer, keep_prob=0.9)
+                output_layer = tf.nn.dropout(output_layer, keep_prob=keep_prob)
 
             logits = tf.matmul(output_layer, output_weight, transpose_b=True)
             logits = tf.nn.bias_add(logits, output_bias)
@@ -349,7 +350,7 @@ def train():
                     total_recall = 0
                     total_acc = 0
     
-                    num_dev_steps = 4
+                    #num_dev_steps = 4
                     for j in range(num_dev_steps):  # 一个 epoch 的 轮数
                         ids_dev, mask_dev, segment_dev, y_dev = sess.run(
                             [dev_input_ids2, dev_input_mask2, dev_segment_ids2, dev_labels2])
