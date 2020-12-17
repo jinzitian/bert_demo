@@ -86,7 +86,7 @@ input_ids = sess.graph.get_tensor_by_name("input_ids:0")
 input_mask = sess.graph.get_tensor_by_name("input_mask:0")  # is_training
 segment_ids = sess.graph.get_tensor_by_name("segment_ids:0")  # fc/dense/Relu  cnn_block/Reshape
 keep_prob = sess.graph.get_tensor_by_name("keep_prob:0")
-prob = sess.graph.get_tensor_by_name("sigmod_loss/Sigmoid:0")
+prob = sess.graph.get_tensor_by_name("sigmoid_loss/Sigmoid:0")
 
 
 def predict(text_list, threshold, max_seq_len):
