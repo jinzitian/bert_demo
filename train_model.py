@@ -28,7 +28,7 @@ config = {
     "dev_batch_size": 64,
     "num_train_epochs": 3,
     "eval_per_step": 20,
-    "learning_rate": 1.5e-5,
+    "learning_rate": 3e-5,
     "warmup_proportion": 0.1,
     "max_seq_len": 256,  # 输入文本片段的最大 char级别 长度
     "out": "./muti_category_bert_base/",  # 保存模型路径
